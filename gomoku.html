@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>一年三班五子棋世紀大對決！！！</title>
+    <style>
+        /* 鎖定全螢幕，防止網頁滾動與頁面彈跳 */
+        html, body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            touch-action: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f6fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        /* 雙人狀態欄：改為極簡、內斂的現代風格 */
+        .player-status {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            padding: 8px 24px;
+            border-radius: 30px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        /* 上方黑棋指示：文字顛倒 180 度 */
+        #status-black {
+            margin-bottom: 12px;
+        }
+        .black-status.active {
+            color: #ffffff;
+            background-color: #1e272e; /* 曜石黑 */
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+            transform: rotate(180deg) scale(1.05);
+        }
+        .black-status.inactive {
+            color: #bdc581; /* 優雅的低調底色 */
+            color: #a5b1c2;
+            background-color: transparent;
+            transform: rotate(180deg) scale(0.95);
+            opacity: 0.4;
+        }
+        .black-status.winner {
+            color: #ffffff;
+            background-color: #eb4d4b; /* 內斂暗紅 */
+            box-shadow: 0 -4px 15px rgba(235, 77, 75, 0.4);
+            animation: pulse-black 1s infinite alternate;
+        }
+
+        /* 下方白棋指示 */
+        #status-white {
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+        .white-status.active {
+            color: #2f3640;
+            background-color: #ffffff;
+            border: 1px solid #dcdde1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: scale(1.05);
+        }
+        .white-status.inactive {
+            color: #a5b1c2;
+            background-color: transparent;
+            border: 1px solid transparent;
+            transform: scale(0.95);
+            opacity: 0.4;
+        }
+        .white-status.winner {
+            color: #ffffff;
+            background-color: #eb4d4b;
+            box-shadow: 0 4px 15px rgba(235, 77, 75, 0.4);
+            animation: pulse-white 1s infinite alternate;
+        }
+
+        /* 經典傳統原木質感棋盤 */
+        .board-container {
+            --board-size: 72vmin;
+            width: var(--board-size);
+            height: var(--board-size);
+            padding: calc(var(--board-size) * 0.03);
+            background-color: #dfac6c; /* 稍微飽和微沉穩的木色 */
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            border: 3px solid #96662d;
+            box-sizing: border-box;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            grid-template-rows: repeat(14, 1fr);
+            width: 100%;
+            height: 100%;
+            background-color: #dfac6c;
+            position: relative;
+        }
+
+        .cell {
+            border: 1px solid #734d1f;
+            box-sizing: border-box;
+        }
+
+        /* 透明點擊層 */
+        #click-overlay {
+            position: absolute;
+            top: calc(-100% / 28);
+            left: calc(-100% / 28);
+            width: calc(100% * 15 / 14);
+            height: calc(100% * 15 / 14);
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+        }
+
+        .intersection {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 擬真高質感棋子 */
+        .piece {
+            width: 82%;
+            height: 82%;
+            border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+            z-index: 10;
+        }
+
+        .black-piece {
+            background: radial-gradient(circle at 30% 30%, #4b4b4b, #0f0f0f 70%);
+        }
+
+        .white-piece {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #dcdde1 85%);
+            border: 1px solid #b5b5b5;
+        }
+
+        /* 獲勝閃爍線條 */
+        .win-highlight {
+            animation: piece-glow 0.8s infinite alternate ease-in-out;
+            border: 2px solid #ff3838 !important;
+            box-shadow: 0 0 12px #ff3838, 0 3px 6px rgba(0,0,0,0.4);
+        }
+
+        @keyframes pulse-black {
+            from { transform: rotate(180deg) scale(1); }
+            to { transform: rotate(180deg) scale(1.03); }
+        }
+        @keyframes pulse-white {
+            from { transform: scale(1); }
+            to { transform: scale(1.03); }
+        }
+        @keyframes piece-glow {
+            from { transform: scale(1); filter: brightness(1); }
+            to { transform: scale(1.06); filter: brightness(1.2); }
+        }
+
+        /* 高級微立體商務風按鈕 */
+        button {
+            padding: 10px 32px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background-color: #2f3640; /* 深邃灰黑 */
+            color: #f5f6fa;
+            border: 1px solid #1e2229;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1e2229, 0 6px 12px rgba(0,0,0,0.1);
+            transition: all 0.1s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #3f4652;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #1e2229, 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 黑棋狀態（上方，文字顛倒） -->
+    <div id="status-black" class="player-status black-status">黑棋落子</div>
+
+    <!-- 棋盤 -->
+    <div class="board-container">
+        <div id="board"></div>
+    </div>
+
+    <!-- 白棋狀態 -->
+    <div id="status-white" class="player-status white-status">白棋落子</div>
+
+    <!-- 重新開始按鈕 -->
+    <button onclick="resetGame()">重新開始</button>
+
+    <script>
+        const BOARD_SIZE = 15;
+        let currentPlayer = 1;
+        let gameActive = true;
+        let boardState = [];
+        let winningPiecesData = null;
+
+        const boardEl = document.getElementById('board');
+        const statusBlackEl = document.getElementById('status-black');
+        const statusWhiteEl = document.getElementById('status-white');
+
+        function saveToLocalStorage() {
+            const gameData = {
+                boardState: boardState,
+                currentPlayer: currentPlayer,
+                gameActive: gameActive,
+                winningPiecesData: winningPiecesData
+            };
+            localStorage.setItem('gomoku_save_data', JSON.stringify(gameData));
+        }
+
+        function updateStatusUI() {
+            if (!gameActive) {
+                if (currentPlayer === 1) {
+                    statusBlackEl.innerText = "黑棋獲勝！";
+                    statusBlackEl.className = "player-status black-status winner";
+                    statusWhiteEl.className = "player-status white-status inactive";
+                } else {
+                    statusWhiteEl.innerText = "白棋獲勝！";
+                    statusWhiteEl.className = "player-status white-status winner";
+                    statusBlackEl.className = "player-status black-status inactive";
+                }
+                return;
+            }
+
+            if (currentPlayer === 1) {
+                statusBlackEl.className = "player-status black-status active";
+                statusWhiteEl.className = "player-status white-status inactive";
+            } else {
+                statusBlackEl.className = "player-status black-status inactive";
+                statusWhiteEl.className = "player-status white-status active";
+            }
+        }
+
+        function initGame() {
+            boardEl.innerHTML = '';
+
+            for (let i = 0; i < (BOARD_SIZE - 1) * (BOARD_SIZE - 1); i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                boardEl.appendChild(cell);
+            }
+
+            const overlay = document.createElement('div');
+            overlay.id = 'click-overlay';
+            boardEl.appendChild(overlay);
+
+            const savedData = localStorage.getItem('gomoku_save_data');
+
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                boardState = data.boardState;
+                currentPlayer = data.currentPlayer;
+                gameActive = data.gameActive;
+                winningPiecesData = data.winningPiecesData;
+
+                statusBlackEl.innerText = gameActive ? "黑棋落子" : "黑棋獲勝！";
+                statusWhiteEl.innerText = gameActive ? "白棋落子" : "白棋獲勝！";
+            } else {
+                boardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+                currentPlayer = 1;
+                gameActive = true;
+                winningPiecesData = null;
+                statusBlackEl.innerText = "黑棋落子";
+                statusWhiteEl.innerText = "白棋落子";
+            }
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const intersection = document.createElement('div');
+                    intersection.className = 'intersection';
+                    intersection.dataset.row = r;
+                    intersection.dataset.col = c;
+
+                    if (boardState[r][c] !== 0) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${boardState[r][c] === 1 ? 'black-piece' : 'white-piece'}`;
+                        intersection.appendChild(piece);
+                    }
+
+                    intersection.addEventListener('click', () => handleDrop(r, c, intersection));
+                    overlay.appendChild(intersection);
+                }
+            }
+
+            if (!gameActive && winningPiecesData) {
+                highlightWin(winningPiecesData);
+            }
+
+            updateStatusUI();
+        }
+
+        function handleDrop(row, col, element) {
+            if (!gameActive || boardState[row][col] !== 0) return;
+
+            boardState[row][col] = currentPlayer;
+
+            const piece = document.createElement('div');
+            piece.className = `piece ${currentPlayer === 1 ? 'black-piece' : 'white-piece'}`;
+            element.appendChild(piece);
+
+            const winPieces = checkWin(row, col);
+            if (winPieces) {
+                gameActive = false;
+                winningPiecesData = winPieces;
+
+                updateStatusUI();
+                highlightWin(winPieces);
+                saveToLocalStorage();
+                return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateStatusUI();
+            saveToLocalStorage();
+        }
+
+        function checkWin(row, col) {
+            const player = boardState[row][col];
+            const directions = [
+                [[0, 1], [0, -1]],
+                [[1, 0], [-1, 0]],
+                [[1, 1], [-1, -1]],
+                [[1, -1], [-1, 1]]
+            ];
+
+            for (let i = 0; i < directions.length; i++) {
+                let count = 1;
+                let winningCoords = [[row, col]];
+
+                for (let j = 0; j < 2; j++) {
+                    const [dr, dc] = directions[i][j];
+                    let r = row + dr;
+                    let c = col + dc;
+
+                    while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && boardState[r][c] === player) {
+                        count++;
+                        winningCoords.push([r, c]);
+                        r += dr;
+                        c += dc;
+                    }
+                }
+
+                if (count >= 5) {
+                    return winningCoords;
+                }
+            }
+            return null;
+        }
+
+        function highlightWin(coords) {
+            coords.forEach(([r, c]) => {
+                const el = document.querySelector(`.intersection[data-row="${r}"][data-col="${c}"] .piece`);
+                if (el) {
+                    el.classList.add('win-highlight');
+                }
+            });
+        }
+
+        function resetGame() {
+            const password = prompt("重置棋盤需要權限驗證，請輸入密碼：");
+
+            if (password === "103") {
+                localStorage.removeItem('gomoku_save_data');
+                initGame();
+            } else if (password !== null) {
+                alert("密碼錯誤！無法重新開始。");
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

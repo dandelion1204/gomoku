@@ -29,13 +29,13 @@
 
         /* 雙人狀態欄：改為極簡、內斂的現代風格 */
         .player-status {
-            font-size: 1.1rem;
+            font-size: 1.6rem;
             font-weight: 600;
             letter-spacing: 1px;
-            padding: 8px 24px;
+            padding: 10px 30px;
             border-radius: 30px;
             transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            height: 24px;
+            height: auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -44,7 +44,7 @@
 
         /* 上方黑棋指示：文字顛倒 180 度 */
         #status-black {
-            margin-bottom: 12px;
+            margin-bottom: 20px;
         }
         .black-status.active {
             color: #ffffff;
@@ -68,8 +68,8 @@
 
         /* 下方白棋指示 */
         #status-white {
-            margin-top: 12px;
-            margin-bottom: 12px;
+            margin-top: 20px;
+            margin-bottom: 20px;
         }
         .white-status.active {
             color: #2f3640;
@@ -185,17 +185,17 @@
             font-size: 0.95rem;
             font-weight: 600;
             letter-spacing: 0.5px;
-            background-color: #2f3640; /* 深邃灰黑 */
+            background-color: #b2b8c2; /* 深邃灰黑 */
             color: #f5f6fa;
-            border: 1px solid #1e2229;
+            border: 1px solid #f1f3f8;
             border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 0 #1e2229, 0 6px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 0 #b8bcc2, 0 6px 12px rgba(0,0,0,0.1);
             transition: all 0.1s ease;
             margin-top: 10px;
         }
         button:hover {
-            background-color: #3f4652;
+            background-color: #f2e7a6;
         }
         button:active {
             transform: translateY(4px);

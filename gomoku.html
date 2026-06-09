@@ -27,78 +27,85 @@
             padding: 10px;
         }
 
-        /* 雙人狀態欄：改為極簡、內斂的現代風格 */
-        .player-status {
-            font-size: 1.6rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            padding: 10px 30px;
-            border-radius: 30px;
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            height: auto;
+        /* 雙人狀態控制列：容納棋子圖示與 OK 按鈕 */
+        .player-panel {
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
             box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* 上方黑棋指示：文字顛倒 180 度 */
-        #status-black {
-            margin-bottom: 20px;
-        }
-        .black-status.active {
-            color: #ffffff;
-            background-color: #1e272e; /* 曜石黑 */
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
-            transform: rotate(180deg) scale(1.05);
-        }
-        .black-status.inactive {
-            color: #bdc581; /* 優雅的低調底色 */
-            color: #a5b1c2;
-            background-color: transparent;
-            transform: rotate(180deg) scale(0.95);
-            opacity: 0.4;
-        }
-        .black-status.winner {
-            color: #ffffff;
-            background-color: #eb4d4b; /* 內斂暗紅 */
-            box-shadow: 0 -4px 15px rgba(235, 77, 75, 0.4);
-            animation: pulse-black 1s infinite alternate;
+        /* 上方黑棋區：整體旋轉 180 度 */
+        #panel-black {
+            margin-bottom: 10px; /* 微調間距讓大棋盤有呼吸空間 */
+            transform: rotate(180deg);
         }
 
-        /* 下方白棋指示 */
-        #status-white {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .white-status.active {
-            color: #2f3640;
-            background-color: #ffffff;
-            border: 1px solid #dcdde1;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transform: scale(1.05);
-        }
-        .white-status.inactive {
-            color: #a5b1c2;
-            background-color: transparent;
-            border: 1px solid transparent;
-            transform: scale(0.95);
-            opacity: 0.4;
-        }
-        .white-status.winner {
-            color: #ffffff;
-            background-color: #eb4d4b;
-            box-shadow: 0 4px 15px rgba(235, 77, 75, 0.4);
-            animation: pulse-white 1s infinite alternate;
+        /* 下方白棋區 */
+        #panel-white {
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
-        /* 經典傳統原木質感棋盤 */
+        /* 大棋子狀態圖示 */
+        .status-piece {
+            width: 46px; /* 稍微縮小狀態欄棋子，把視覺重心讓給大棋盤 */
+            height: 46px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .status-piece.black {
+            background: radial-gradient(circle at 30% 30%, #4b4b4b, #0f0f0f 70%);
+        }
+        .status-piece.white {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #dcdde1 85%);
+            border: 1px solid #b5b5b5;
+        }
+
+        /* 當前玩家圖示放大與發光 */
+        .player-panel.active .status-piece {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.25);
+        }
+        .player-panel.active .status-piece.white {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 獲勝時圖示變紅色閃爍 */
+        .player-panel.winner .status-piece {
+            background: #eb4d4b !important;
+            border: none;
+            box-shadow: 0 0 20px #eb4d4b;
+            animation: pulse-win 0.8s infinite alternate;
+        }
+        /* 獲勝文字（蓋在圖示上） */
+        .player-panel.winner .status-piece::after {
+            content: "👑";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3rem;
+        }
+
+        /* 非當前玩家透明度降低 */
+        .player-panel.inactive {
+            opacity: 0.35;
+        }
+
+        /* 核心修改：經典傳統原木質感棋盤大小放大（從 72vmin 升級至 88vmin） */
         .board-container {
-            --board-size: 72vmin;
+            --board-size: 88vmin; /* 關鍵！這裡放大了棋盤尺寸，格子也會跟著等比例變大 */
             width: var(--board-size);
             height: var(--board-size);
             padding: calc(var(--board-size) * 0.03);
-            background-color: #dfac6c; /* 稍微飽和微沉穩的木色 */
+            background-color: #dfac6c;
             box-shadow: 0 12px 28px rgba(0,0,0,0.15);
             border-radius: 8px;
             border: 3px solid #96662d;
@@ -148,6 +155,7 @@
             border-radius: 50%;
             box-shadow: 0 3px 6px rgba(0,0,0,0.35);
             z-index: 10;
+            transition: opacity 0.15s ease;
         }
 
         .black-piece {
@@ -159,6 +167,12 @@
             border: 1px solid #b5b5b5;
         }
 
+        /* 半透明預覽樣式 */
+        .piece.preview {
+            opacity: 0.55;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
         /* 獲勝閃爍線條 */
         .win-highlight {
             animation: piece-glow 0.8s infinite alternate ease-in-out;
@@ -166,58 +180,235 @@
             box-shadow: 0 0 12px #ff3838, 0 3px 6px rgba(0,0,0,0.4);
         }
 
-        @keyframes pulse-black {
-            from { transform: rotate(180deg) scale(1); }
-            to { transform: rotate(180deg) scale(1.03); }
-        }
-        @keyframes pulse-white {
-            from { transform: scale(1); }
-            to { transform: scale(1.03); }
+        @keyframes pulse-win {
+            from { transform: scale(1.05); }
+            to { transform: scale(1.15); }
         }
         @keyframes piece-glow {
             from { transform: scale(1); filter: brightness(1); }
             to { transform: scale(1.06); filter: brightness(1.2); }
         }
 
-        /* 高級微立體商務風按鈕 */
+        /* 基礎按鈕樣式 */
         button {
             padding: 10px 32px;
             font-size: 0.95rem;
             font-weight: 600;
             letter-spacing: 0.5px;
-            background-color: #b2b8c2; /* 深邃灰黑 */
             color: #f5f6fa;
             border: 1px solid #f1f3f8;
             border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 0 #b8bcc2, 0 6px 12px rgba(0,0,0,0.1);
             transition: all 0.1s ease;
-            margin-top: 10px;
         }
-        button:hover {
-            background-color: #f2e7a6;
+
+        /* 專屬 OK 確認按鈕樣式 */
+        .btn-ok {
+            background-color: #2ecc71;
+            box-shadow: 0 4px 0 #27ae60, 0 6px 12px rgba(0,0,0,0.1);
+            padding: 10px 24px;
         }
-        button:active {
+        .btn-ok:hover {
+            background-color: #27ae60;
+        }
+        .btn-ok:active {
             transform: translateY(4px);
             box-shadow: 0 0px 0 #1e2229, 0 2px 4px rgba(0,0,0,0.1);
         }
+        .btn-ok:disabled {
+            background-color: #d2d7d9;
+            box-shadow: 0 4px 0 #bcc1c3;
+            color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        /* 重新開始按鈕 */
+        .btn-reset {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            background-color: #b2b8c2;
+            box-shadow: 0 4px 0 #b8bcc2, 0 6px 12px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-reset:hover {
+            background-color: #a1a8b5;
+        }
+        .btn-reset:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #1e2229, 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-reset svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+        .btn-reset:hover svg {
+            transform: rotate(45deg);
+        }
+
+        /* 客製化數字鍵盤彈窗的 CSS 樣式 */
+        .overlay-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .overlay-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .keypad-container {
+            background-color: #f8f9fa;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.85);
+            transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .overlay-modal.show .keypad-container {
+            transform: scale(1);
+        }
+
+        .keypad-screen {
+            width: 100%;
+            height: 50px;
+            background-color: #ffffff;
+            border: 2px solid #dcdde1;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2f3640;
+            box-sizing: border-box;
+        }
+
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+
+        .key-btn {
+            height: 55px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            background-color: #ffffff;
+            color: #2f3640;
+            border: 1px solid #dcdde1;
+            border-radius: 10px;
+            padding: 0;
+            box-shadow: 0 4px 0 #dcdde1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .key-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 transparent;
+        }
+
+        .key-btn.action-clear {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #c0392b;
+            box-shadow: 0 4px 0 #c0392b;
+        }
+        .key-btn.action-clear:active { box-shadow: 0 0px 0 transparent; }
+
+        .key-btn.action-enter {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #27ae60;
+            box-shadow: 0 4px 0 #27ae60;
+        }
+        .key-btn.action-enter:active { box-shadow: 0 0px 0 transparent; }
+
+        .key-btn.action-cancel {
+            background-color: #95a5a6;
+            color: white;
+            border-color: #7f8c8d;
+            box-shadow: 0 4px 0 #7f8c8d;
+        }
+        .key-btn.action-cancel:active { box-shadow: 0 0px 0 transparent; }
     </style>
 </head>
 <body>
 
-    <!-- 黑棋狀態（上方，文字顛倒） -->
-    <div id="status-black" class="player-status black-status">黑棋落子</div>
+    <!-- 重新開始按鈕 -->
+    <button class="btn-reset" onclick="openKeypad()" title="重新開始">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+    </button>
+
+    <!-- 黑棋控制區（上方，整體顛倒） -->
+    <div id="panel-black" class="player-panel">
+        <div class="status-piece black"></div>
+        <button id="ok-black" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
+    </div>
 
     <!-- 棋盤 -->
     <div class="board-container">
         <div id="board"></div>
     </div>
 
-    <!-- 白棋狀態 -->
-    <div id="status-white" class="player-status white-status">白棋落子</div>
+    <!-- 白棋控制區（下方） -->
+    <div id="panel-white" class="player-panel">
+        <div class="status-piece white"></div>
+        <button id="ok-white" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
+    </div>
 
-    <!-- 重新開始按鈕 -->
-    <button onclick="resetGame()">重新開始</button>
+    <!-- 數字鍵盤彈窗 -->
+    <div id="keypadModal" class="overlay-modal">
+        <div class="keypad-container">
+            <div id="keypadScreen" class="keypad-screen" style="color: #b2bec3; font-size: 1.1rem; font-weight: normal;">輸入驗證密碼</div>
+            <div class="keypad-grid">
+                <button class="key-btn" onclick="pressNum('1')">1</button>
+                <button class="key-btn" onclick="pressNum('2')">2</button>
+                <button class="key-btn" onclick="pressNum('3')">3</button>
+                <button class="key-btn" onclick="pressNum('4')">4</button>
+                <button class="key-btn" onclick="pressNum('5')">5</button>
+                <button class="key-btn" onclick="pressNum('6')">6</button>
+                <button class="key-btn" onclick="pressNum('7')">7</button>
+                <button class="key-btn" onclick="pressNum('8')">8</button>
+                <button class="key-btn" onclick="pressNum('9')">9</button>
+                <button class="key-btn action-clear" onclick="pressClear()">清除</button>
+                <button class="key-btn" onclick="pressNum('0')">0</button>
+                <button class="key-btn action-enter" onclick="pressEnter()">確認</button>
+                <button class="key-btn action-cancel" onclick="closeKeypad()" style="grid-column: span 3; height: 45px; font-size: 1rem; margin-top: 5px;">關閉視窗</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const BOARD_SIZE = 15;
@@ -226,9 +417,17 @@
         let boardState = [];
         let winningPiecesData = null;
 
+        let previewData = null;
+        let inputPassword = "";
+
         const boardEl = document.getElementById('board');
-        const statusBlackEl = document.getElementById('status-black');
-        const statusWhiteEl = document.getElementById('status-white');
+        const panelBlack = document.getElementById('panel-black');
+        const panelWhite = document.getElementById('panel-white');
+        const okBlack = document.getElementById('ok-black');
+        const okWhite = document.getElementById('ok-white');
+
+        const keypadModal = document.getElementById('keypadModal');
+        const keypadScreen = document.getElementById('keypadScreen');
 
         function saveToLocalStorage() {
             const gameData = {
@@ -241,30 +440,32 @@
         }
 
         function updateStatusUI() {
+            panelBlack.className = "player-panel inactive";
+            panelWhite.className = "player-panel inactive";
+            okBlack.disabled = true;
+            okWhite.disabled = true;
+
             if (!gameActive) {
                 if (currentPlayer === 1) {
-                    statusBlackEl.innerText = "黑棋獲勝！";
-                    statusBlackEl.className = "player-status black-status winner";
-                    statusWhiteEl.className = "player-status white-status inactive";
+                    panelBlack.className = "player-panel winner";
                 } else {
-                    statusWhiteEl.innerText = "白棋獲勝！";
-                    statusWhiteEl.className = "player-status white-status winner";
-                    statusBlackEl.className = "player-status black-status inactive";
+                    panelWhite.className = "player-panel winner";
                 }
                 return;
             }
 
             if (currentPlayer === 1) {
-                statusBlackEl.className = "player-status black-status active";
-                statusWhiteEl.className = "player-status white-status inactive";
+                panelBlack.className = "player-panel active";
+                if (previewData) okBlack.disabled = false;
             } else {
-                statusBlackEl.className = "player-status black-status inactive";
-                statusWhiteEl.className = "player-status white-status active";
+                panelWhite.className = "player-panel active";
+                if (previewData) okWhite.disabled = false;
             }
         }
 
         function initGame() {
             boardEl.innerHTML = '';
+            previewData = null;
 
             for (let i = 0; i < (BOARD_SIZE - 1) * (BOARD_SIZE - 1); i++) {
                 const cell = document.createElement('div');
@@ -284,16 +485,11 @@
                 currentPlayer = data.currentPlayer;
                 gameActive = data.gameActive;
                 winningPiecesData = data.winningPiecesData;
-
-                statusBlackEl.innerText = gameActive ? "黑棋落子" : "黑棋獲勝！";
-                statusWhiteEl.innerText = gameActive ? "白棋落子" : "白棋獲勝！";
             } else {
                 boardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
                 currentPlayer = 1;
                 gameActive = true;
                 winningPiecesData = null;
-                statusBlackEl.innerText = "黑棋落子";
-                statusWhiteEl.innerText = "白棋落子";
             }
 
             for (let r = 0; r < BOARD_SIZE; r++) {
@@ -309,7 +505,7 @@
                         intersection.appendChild(piece);
                     }
 
-                    intersection.addEventListener('click', () => handleDrop(r, c, intersection));
+                    intersection.addEventListener('click', () => handlePreview(r, c, intersection));
                     overlay.appendChild(intersection);
                 }
             }
@@ -321,20 +517,42 @@
             updateStatusUI();
         }
 
-        function handleDrop(row, col, element) {
+        function handlePreview(row, col, element) {
             if (!gameActive || boardState[row][col] !== 0) return;
+            if (previewData && previewData.row === row && previewData.col === col) return;
 
-            boardState[row][col] = currentPlayer;
+            if (previewData) {
+                previewData.element.innerHTML = '';
+            }
 
             const piece = document.createElement('div');
-            piece.className = `piece ${currentPlayer === 1 ? 'black-piece' : 'white-piece'}`;
+            piece.className = `piece ${currentPlayer === 1 ? 'black-piece' : 'white-piece'} preview`;
             element.appendChild(piece);
+
+            previewData = {
+                row: row,
+                col: col,
+                element: element,
+                pieceElement: piece
+            };
+
+            updateStatusUI();
+        }
+
+        function confirmDrop() {
+            if (!gameActive || !previewData) return;
+
+            const { row, col, pieceElement } = previewData;
+
+            boardState[row][col] = currentPlayer;
+            pieceElement.classList.remove('preview');
+
+            previewData = null;
 
             const winPieces = checkWin(row, col);
             if (winPieces) {
                 gameActive = false;
                 winningPiecesData = winPieces;
-
                 updateStatusUI();
                 highlightWin(winPieces);
                 saveToLocalStorage();
@@ -388,14 +606,47 @@
             });
         }
 
-        function resetGame() {
-            const password = prompt("重置棋盤需要權限驗證，請輸入密碼：");
+        function openKeypad() {
+            inputPassword = "";
+            keypadScreen.innerText = "輸入驗證密碼";
+            keypadScreen.style.color = "#b2bec3";
+            keypadScreen.style.fontSize = "1.1rem";
+            keypadScreen.style.fontWeight = "normal";
+            keypadModal.classList.add('show');
+        }
 
-            if (password === "103") {
+        function closeKeypad() {
+            keypadModal.classList.remove('show');
+        }
+
+        function pressNum(num) {
+            if (inputPassword.length >= 6) return;
+            inputPassword += num;
+            keypadScreen.innerText = inputPassword;
+            keypadScreen.style.color = "#2f3640";
+            keypadScreen.style.fontSize = "1.8rem";
+            keypadScreen.style.fontWeight = "700";
+        }
+
+        function pressClear() {
+            inputPassword = "";
+            keypadScreen.innerText = "已清空";
+            keypadScreen.style.color = "#e74c3c";
+            keypadScreen.style.fontSize = "1.2rem";
+            keypadScreen.style.fontWeight = "600";
+        }
+
+        function pressEnter() {
+            if (inputPassword === "103") {
                 localStorage.removeItem('gomoku_save_data');
+                closeKeypad();
                 initGame();
-            } else if (password !== null) {
-                alert("密碼錯誤！無法重新開始。");
+            } else {
+                inputPassword = "";
+                keypadScreen.innerText = "密碼錯誤！";
+                keypadScreen.style.color = "#e74c3c";
+                keypadScreen.style.fontSize = "1.4rem";
+                keypadScreen.style.fontWeight = "700";
             }
         }
 

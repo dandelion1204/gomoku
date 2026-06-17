@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>一年三班五子棋世紀大對決！！！</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋(修放大卡住ＢＵＧ)</title>
     <style>
         /* 鎖定全螢幕，防止網頁滾動與頁面彈跳 */
         html, body {
@@ -13,7 +13,7 @@
             overflow: hidden;
             margin: 0;
             padding: 0;
-            touch-action: none;
+            /* 修正：從 html, body 移除 touch-action: none，避免鎖死整個系統的手勢 */
         }
 
         body {
@@ -110,6 +110,8 @@
             border-radius: 8px;
             border: 3px solid #96662d;
             box-sizing: border-box;
+            /* 優化：僅在此處加入 manipulation，禁止棋盤區的雙擊自動放大，但允許正常點擊與整體雙指縮放 */
+            touch-action: manipulation;
         }
 
         #board {
@@ -200,6 +202,7 @@
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.1s ease;
+            touch-action: manipulation; /* 防止按鈕觸發瀏覽器雙擊放大 */
         }
 
         /* 專屬 OK 確認按鈕樣式 */
@@ -364,31 +367,26 @@
 </head>
 <body>
 
-    <!-- 重新開始按鈕 -->
     <button class="btn-reset" onclick="openKeypad()" title="重新開始">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
         </svg>
     </button>
 
-    <!-- 黑棋控制區（上方，整體顛倒） -->
     <div id="panel-black" class="player-panel">
         <div class="status-piece black"></div>
         <button id="ok-black" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
     </div>
 
-    <!-- 棋盤 -->
     <div class="board-container">
         <div id="board"></div>
     </div>
 
-    <!-- 白棋控制區（下方） -->
     <div id="panel-white" class="player-panel">
         <div class="status-piece white"></div>
         <button id="ok-white" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
     </div>
 
-    <!-- 數字鍵盤彈窗 -->
     <div id="keypadModal" class="overlay-modal">
         <div class="keypad-container">
             <div id="keypadScreen" class="keypad-screen" style="color: #b2bec3; font-size: 1.1rem; font-weight: normal;">輸入驗證密碼</div>

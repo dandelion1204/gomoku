@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋(修放大卡住ＢＵＧ)</title>
+    <style>
+        /* 鎖定全螢幕，防止網頁滾動與頁面彈跳 */
+        html, body {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f6fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        /* 雙人狀態控制列：容納棋子圖示與 OK 按鈕 */
+        .player-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* 上方黑棋區：整體旋轉 180 度 */
+        #panel-black {
+            margin-bottom: 10px;
+            transform: rotate(180deg);
+        }
+
+        /* 下方白棋區 */
+        #panel-white {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* 大棋子狀態圖示 */
+        .status-piece {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .status-piece.black {
+            background: radial-gradient(circle at 30% 30%, #4b4b4b, #0f0f0f 70%);
+        }
+        .status-piece.white {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #dcdde1 85%);
+            border: 1px solid #b5b5b5;
+        }
+
+        /* 當前玩家圖示放大與發光 */
+        .player-panel.active .status-piece {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.25);
+        }
+        .player-panel.active .status-piece.white {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 獲勝時圖示變紅色閃爍 */
+        .player-panel.winner .status-piece {
+            background: #eb4d4b !important;
+            border: none;
+            box-shadow: 0 0 20px #eb4d4b;
+            animation: pulse-win 0.8s infinite alternate;
+        }
+        .player-panel.winner .status-piece::after {
+            content: "👑";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.3rem;
+        }
+
+        /* 非當前玩家透明度降低 */
+        .player-panel.inactive {
+            opacity: 0.35;
+        }
+
+        /* 經典傳統原木質感棋盤大小放大 */
+        .board-container {
+            --board-size: 88vmin;
+            width: var(--board-size);
+            height: var(--board-size);
+            padding: calc(var(--board-size) * 0.03);
+            background-color: #dfac6c;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            border: 3px solid #96662d;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            grid-template-rows: repeat(14, 1fr);
+            width: 100%;
+            height: 100%;
+            background-color: #dfac6c;
+            position: relative;
+        }
+
+        .cell {
+            border: 1px solid #734d1f;
+            box-sizing: border-box;
+        }
+
+        /* 透明點擊層 */
+        #click-overlay {
+            position: absolute;
+            top: calc(-100% / 28);
+            left: calc(-100% / 28);
+            width: calc(100% * 15 / 14);
+            height: calc(100% * 15 / 14);
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+        }
+
+        .intersection {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 擬真高質感棋子 */
+        .piece {
+            width: 82%;
+            height: 82%;
+            border-radius: 50%;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.35);
+            z-index: 10;
+            transition: opacity 0.15s ease;
+        }
+
+        .black-piece {
+            background: radial-gradient(circle at 30% 30%, #4b4b4b, #0f0f0f 70%);
+        }
+
+        .white-piece {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #dcdde1 85%);
+            border: 1px solid #b5b5b5;
+        }
+
+        /* 半透明預覽樣式 */
+        .piece.preview {
+            opacity: 0.55;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 獲勝閃爍線條 */
+        .win-highlight {
+            animation: piece-glow 0.8s infinite alternate ease-in-out;
+            border: 2px solid #ff3838 !important;
+            box-shadow: 0 0 12px #ff3838, 0 3px 6px rgba(0,0,0,0.4);
+        }
+
+        @keyframes pulse-win {
+            from { transform: scale(1.05); }
+            to { transform: scale(1.15); }
+        }
+        @keyframes piece-glow {
+            from { transform: scale(1); filter: brightness(1); }
+            to { transform: scale(1.06); filter: brightness(1.2); }
+        }
+
+        /* 基礎按鈕樣式 */
+        button {
+            padding: 10px 32px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #f5f6fa;
+            border: 1px solid #f1f3f8;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+        }
+
+        /* 專屬 OK 確認按鈕樣式 */
+        .btn-ok {
+            background-color: #2ecc71;
+            box-shadow: 0 4px 0 #27ae60, 0 6px 12px rgba(0,0,0,0.1);
+            padding: 10px 24px;
+        }
+        .btn-ok:hover {
+            background-color: #27ae60;
+        }
+        .btn-ok:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #1e2229, 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-ok:disabled {
+            background-color: #d2d7d9;
+            box-shadow: 0 4px 0 #bcc1c3;
+            color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        /* 重新開始按鈕 */
+        .btn-reset {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            background-color: #b2b8c2;
+            box-shadow: 0 4px 0 #b8bcc2, 0 6px 12px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-reset:hover {
+            background-color: #a1a8b5;
+        }
+        .btn-reset:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #1e2229, 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-reset svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+        .btn-reset:hover svg {
+            transform: rotate(45deg);
+        }
+
+        /* 詢問確認彈窗的 CSS 樣式 */
+        .overlay-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .overlay-modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .confirm-container {
+            background-color: #f8f9fa;
+            padding: 25px 20px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.85);
+            transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+            box-sizing: border-box;
+        }
+        .overlay-modal.show .confirm-container {
+            transform: scale(1);
+        }
+
+        /* 圖片標題區的包裝結構 */
+        .modal-image-title {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px dashed #dcdde1;
+        }
+        .modal-image-title img {
+            max-width: 90%;            /* 防圖片塞爆彈窗 */
+            height: auto;              /* 依比例自適應縮放 */
+            display: inline-block;
+        }
+
+        /* 下方的詳細說明內文 */
+        .confirm-content-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #57606f;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            width: 100%;
+            gap: 16px;
+        }
+
+        /* 大大的 YES / NO 按鈕樣式 */
+        .btn-large {
+            flex: 1;
+            height: 60px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border-radius: 12px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .btn-large.yes {
+            background-color: #2ecc71;
+            color: white;
+            box-shadow: 0 5px 0 #27ae60;
+        }
+        .btn-large.yes:active {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 transparent;
+        }
+
+        .btn-large.no {
+            background-color: #ff4757;
+            color: white;
+            box-shadow: 0 5px 0 #ee5253;
+        }
+        .btn-large.no:active {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 transparent;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn-reset" onclick="openConfirmModal()" title="重新開始">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+    </button>
+
+    <div id="panel-black" class="player-panel">
+        <div class="status-piece black"></div>
+        <button id="ok-black" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
+    </div>
+
+    <div class="board-container">
+        <div id="board"></div>
+    </div>
+
+    <div id="panel-white" class="player-panel">
+        <div class="status-piece white"></div>
+        <button id="ok-white" class="btn-ok" onclick="confirmDrop()" disabled>ＯＫ</button>
+    </div>
+
+    <div id="confirmModal" class="overlay-modal">
+        <div class="confirm-container">
+
+            <div class="modal-image-title">
+                <img src="renew.png" alt="重新開始？">
+            </div>
+
+            <div class="confirm-content-text">
+                是否要重新開始？<br>
+                <span style="font-size:0.9rem; font-weight:normal; color:#a4b0be; display:block; margin-top:6px;">
+                    目前的對局進度將不會保留
+                </span>
+            </div>
+
+            <div class="confirm-buttons">
+                <button class="btn-large no" onclick="closeConfirmModal()">NO</button>
+                <button class="btn-large yes" onclick="resetGame()">YES</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 15;
+        let currentPlayer = 1;
+        let gameActive = true;
+        let boardState = [];
+        let winningPiecesData = null;
+        let previewData = null;
+
+        const boardEl = document.getElementById('board');
+        const panelBlack = document.getElementById('panel-black');
+        const panelWhite = document.getElementById('panel-white');
+        const okBlack = document.getElementById('ok-black');
+        const okWhite = document.getElementById('ok-white');
+        const confirmModal = document.getElementById('confirmModal');
+
+        function saveToLocalStorage() {
+            const gameData = {
+                boardState: boardState,
+                currentPlayer: currentPlayer,
+                gameActive: gameActive,
+                winningPiecesData: winningPiecesData
+            };
+            localStorage.setItem('gomoku_save_data', JSON.stringify(gameData));
+        }
+
+        function updateStatusUI() {
+            panelBlack.className = "player-panel inactive";
+            panelWhite.className = "player-panel inactive";
+            okBlack.disabled = true;
+            okWhite.disabled = true;
+
+            if (!gameActive) {
+                if (currentPlayer === 1) {
+                    panelBlack.className = "player-panel winner";
+                } else {
+                    panelWhite.className = "player-panel winner";
+                }
+                return;
+            }
+
+            if (currentPlayer === 1) {
+                panelBlack.className = "player-panel active";
+                if (previewData) okBlack.disabled = false;
+            } else {
+                panelWhite.className = "player-panel active";
+                if (previewData) okWhite.disabled = false;
+            }
+        }
+
+        function initGame() {
+            boardEl.innerHTML = '';
+            previewData = null;
+
+            for (let i = 0; i < (BOARD_SIZE - 1) * (BOARD_SIZE - 1); i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                boardEl.appendChild(cell);
+            }
+
+            const overlay = document.createElement('div');
+            overlay.id = 'click-overlay';
+            boardEl.appendChild(overlay);
+
+            const savedData = localStorage.getItem('gomoku_save_data');
+
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                boardState = data.boardState;
+                currentPlayer = data.currentPlayer;
+                gameActive = data.gameActive;
+                winningPiecesData = data.winningPiecesData;
+            } else {
+                boardState = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+                currentPlayer = 1;
+                gameActive = true;
+                winningPiecesData = null;
+            }
+
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const intersection = document.createElement('div');
+                    intersection.className = 'intersection';
+                    intersection.dataset.row = r;
+                    intersection.dataset.col = c;
+
+                    if (boardState[r][c] !== 0) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${boardState[r][c] === 1 ? 'black-piece' : 'white-piece'}`;
+                        intersection.appendChild(piece);
+                    }
+
+                    intersection.addEventListener('click', () => handlePreview(r, c, intersection));
+                    overlay.appendChild(intersection);
+                }
+            }
+
+            if (!gameActive && winningPiecesData) {
+                highlightWin(winningPiecesData);
+            }
+
+            updateStatusUI();
+        }
+
+        function handlePreview(row, col, element) {
+            if (!gameActive || boardState[row][col] !== 0) return;
+            if (previewData && previewData.row === row && previewData.col === col) return;
+
+            if (previewData) {
+                previewData.element.innerHTML = '';
+            }
+
+            const piece = document.createElement('div');
+            piece.className = `piece ${currentPlayer === 1 ? 'black-piece' : 'white-piece'} preview`;
+            element.appendChild(piece);
+
+            previewData = {
+                row: row,
+                col: col,
+                element: element,
+                pieceElement: piece
+            };
+
+            updateStatusUI();
+        }
+
+        function confirmDrop() {
+            if (!gameActive || !previewData) return;
+
+            const { row, col, pieceElement } = previewData;
+
+            boardState[row][col] = currentPlayer;
+            pieceElement.classList.remove('preview');
+
+            previewData = null;
+
+            const winPieces = checkWin(row, col);
+            if (winPieces) {
+                gameActive = false;
+                winningPiecesData = winPieces;
+                updateStatusUI();
+                highlightWin(winPieces);
+                saveToLocalStorage();
+                return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateStatusUI();
+            saveToLocalStorage();
+        }
+
+        function checkWin(row, col) {
+            const player = boardState[row][col];
+            const directions = [
+                [[0, 1], [0, -1]],
+                [[1, 0], [-1, 0]],
+                [[1, 1], [-1, -1]],
+                [[1, -1], [-1, 1]]
+            ];
+
+            for (let i = 0; i < directions.length; i++) {
+                let count = 1;
+                let winningCoords = [[row, col]];
+
+                for (let j = 0; j < 2; j++) {
+                    const [dr, dc] = directions[i][j];
+                    let r = row + dr;
+                    let c = col + dc;
+
+                    while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && boardState[r][c] === player) {
+                        count++;
+                        winningCoords.push([r, c]);
+                        r += dr;
+                        c += dc;
+                    }
+                }
+
+                if (count >= 5) {
+                    return winningCoords;
+                }
+            }
+            return null;
+        }
+
+        function highlightWin(coords) {
+            coords.forEach(([r, c]) => {
+                const el = document.querySelector(`.intersection[data-row="${r}"][data-col="${c}"] .piece`);
+                if (el) {
+                    el.classList.add('win-highlight');
+                }
+            });
+        }
+
+        /* 彈窗控制邏輯 */
+        function openConfirmModal() {
+            confirmModal.classList.add('show');
+        }
+
+        function closeConfirmModal() {
+            confirmModal.classList.remove('show');
+        }
+
+        function resetGame() {
+            localStorage.removeItem('gomoku_save_data');
+            closeConfirmModal();
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
